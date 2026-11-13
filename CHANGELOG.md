@@ -1,38 +1,37 @@
 # Changelog
 
 ## 1.1.2 — 2026-11-12
-- Recorte físico redondeado de los botones para eliminar residuos en las esquinas.
-- Campos de ruta sin borde nativo, dentro de un marco redondeado con foco visible.
-- Selectores de tema e idioma compactos, con flecha dibujada y menú nativo, sin borde blanco de ComboBox.
-- Se conservan teclado, selección, traducciones y persistencia de preferencias.
+- Clip button corners to remove visual residue.
+- Replace native path borders with rounded frames and a visible focus state.
+- Make theme and language selectors compact, with a drawn arrow and native menu instead of the white ComboBox border.
+- Preserve keyboard use, selection, translations, and preference storage.
 
 ## 1.1.1 — 2026-11-12
-- Botones compactos, tarjetas y ventana con menor espaciado.
-- Barra de título nativa de Windows 11 sincronizada con claro/oscuro/sistema y alto contraste.
-- Fondo de botones corregido para evitar esquinas y bordes residuales.
-- Pruebas de altura de botones y lectura del atributo de color de la barra nativa.
+- Compact buttons and cards with tighter window spacing.
+- Synchronize the native Windows 11 title bar with light/dark/system themes and high contrast.
+- Fix button backgrounds to remove residual corners and borders.
+- Add checks for button height and native title bar color attribute.
 
 ## 1.1.0 — 2026-11-12
-### Interfaz
-- Diseño de dos pasos inspirado en Fluent: jerarquía tipográfica, tarjetas, iconos de carpeta, espaciado y acción principal.
-- Temas claro, oscuro y sistema; respeto del alto contraste y de las animaciones del sistema.
-- Español, inglés, portugués y francés completos.
-- Configuración de primera apertura, preferencias locales, ayuda localizada, atajos y contenido desplazable.
+### Interface
+- Two-step Fluent-inspired design with clear typography, cards, folder icons, spacing, and a primary action.
+- Light, dark, and system themes; respect high contrast and system animation settings.
+- Complete English, Spanish, Portuguese, and French localization.
+- First-run setup, local preferences, localized help, keyboard shortcuts, and scrollable content.
 
-### Funcionalidad
-- Comprobar rutas sin crear nada, progreso, resultado inline, abrir destino y copiar ruta.
-- Actividad de sesión plegable y sin persistencia.
-- Junctions mediante API nativa de Windows; sin cmd.exe, PowerShell o elevación automática.
-- Creación exclusiva contra colisiones y soporte literal de &, %, ! y ^.
-- Configuración inválida y campos desconocidos conservados.
+### Functionality
+- Validate paths without creating anything; show progress and inline results; open destination and copy its path.
+- Collapsible session activity that is not persisted.
+- Create junctions through native Windows APIs; no cmd.exe, PowerShell, or automatic elevation.
+- Exclusive creation to prevent collisions; literal support for &, %, !, and ^.
+- Preserve invalid settings files and unknown fields.
 
-### Calidad y distribución
-- Pruebas NTFS reales y matriz visual simulada de cuatro idiomas, dos temas y cuatro escalas.
-- Clean/restore/build en Debug y Release con warnings como errores.
-- Paquetes NuGet directos/transitivos: ninguno antes y después.
-- Versión de paquete prevista: 1.1.0.0; plantilla MSIX y preparación local sin firma.
-- Se mantiene Microsoft .NET 8 por requisito explícito. Sin publicación ni push.
+### Quality and distribution
+- Real NTFS tests and a simulated visual matrix across four languages, two themes, and four scales.
+- Clean/restore/build in Debug and Release with warnings treated as errors.
+- No direct or transitive NuGet packages before or after.
+- Keep Microsoft .NET 8 as explicitly required.
 
 ## 1.0.0
-- Base original: creación de junctions con mklink /J y Windows Forms.
-- La revisión anterior de robustez quedó documentada en INFORME_MEJORAS.md; sus cambios aún no tenían commits propios al iniciar 1.1.
+- Original baseline: create junctions with mklink /J in Windows Forms.
+- Earlier robustness work was documented in INFORME_MEJORAS.md; those changes had no separate commits when 1.1 work began.

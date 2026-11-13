@@ -1,45 +1,26 @@
-# Actualización 1.1.2
+# NoReinstallHub 1.1.2 update report
 
-NoReinstallHub continúa en **Microsoft .NET 8 / Windows Forms** y mantiene su propósito: crear junctions NTFS sin mover, copiar ni borrar los archivos del usuario.
+NoReinstallHub is a Windows Forms desktop app on Microsoft .NET 8. It creates NTFS junctions so existing files remain in place while accessible through another path. The starting app had a dated interface and used a command interpreter for junction creation.
 
-## Interfaz y uso
+## Interface
+- Two clear steps for real files and the new link location.
+- Light, dark, and system themes; compact rounded buttons and selectors; rounded path fields with visible focus.
+- English, Spanish, Portuguese, and French; keyboard navigation and first-run preferences.
+- Expandable activity, inline results, progress, and actions to open or copy a path.
 
-- Dos pasos: archivos reales y ubicación nueva del enlace.
-- Temas claro, oscuro y sistema; barra nativa acorde al tema en Windows 11.
-- Botones compactos y esquinas recortadas; campos de ruta con marco redondeado y foco visible.
-- Selectores compactos con menús nativos, sin el marco blanco de los ComboBox.
-- Español, inglés, portugués y francés; ayuda, teclado y primera apertura configurables.
-- Comprobación de rutas sin efectos, progreso, resultado inline, abrir destino y copiar ruta.
-- Actividad plegable y preferencias locales que no guardan rutas ni registros.
+## Robustness
+- Create junctions through native Windows APIs, without a shell or automatic elevation.
+- Reserve the destination exclusively; never replace even an empty existing destination. Reject overlapping, network, and intermediate-link paths.
+- Save preferences atomically without storing paths; preserve unreadable settings and unknown fields.
 
-## Robustez
+## Verification
+- Clean, restore, and build Debug/Release without warnings or errors.
+- 1,660 checks in the 1.1.2 review across path handling, data preservation, real junctions, collisions, preferences, menus, and editing.
+- 32 simulated combinations across four languages, two themes, and 100/125/150/200% scaling.
+- Screenshots are reproducible client-area captures using example paths.
+- No direct or transitive NuGet packages before or after; vulnerability/outdated checks had no package references to report.
 
-La creación usa API nativa Windows, sin cmd ni elevación automática. El destino se reserva de forma exclusiva. Nunca se reemplazan archivos, carpetas vacías o enlaces existentes. Las rutas superpuestas, de red o con enlaces intermedios se rechazan.
+## Limits and follow-up
+Simulations do not replace testing on physical DPI monitors, Narrator, or high-contrast systems. DWM title bar behavior could not be verified in the isolated build environment; the supplied user screenshot confirmed dark title bar behavior on a desktop. No operating system or runtime security audit is claimed. Microsoft .NET 8 was retained as required; its support ended November 10, 2026.
 
-Las preferencias se guardan atómicamente y se conservan los archivos ilegibles y los campos desconocidos. No hay servicios, telemetría, escaneo de discos ni actualización automática.
-
-## Validación
-
-- Clean, restore y compilación Debug/Release sin errores ni advertencias.
-- 1.660 comprobaciones en la revisión de 1.1.2: rutas, conservación de datos, junctions reales, colisiones, preferencias, menús y edición.
-- Matriz simulada de 32 casos: cuatro idiomas, dos temas y escala 100/125/150/200 %.
-- Capturas reproducibles del área cliente; las rutas mostradas son ejemplos y no crean enlaces.
-- Ningún paquete NuGet directo o transitivo antes ni después de la actualización. Consultas de paquetes obsoletos y vulnerables sin referencias que actualizar.
-
-## Versiones
-
-App: 1.1.2. Ensamblado y paquete Store previsto: 1.1.2.0. Version.props centraliza estos valores. No se cambia .NET 8.
-
-## Límites
-
-La simulación no sustituye probar monitores con DPI real, Narrador y alto contraste en equipos físicos. La barra DWM no se puede validar en el entorno aislado; la captura aportada por el usuario confirma el tema oscuro en su escritorio.
-
-La preparación MSIX no equivale a certificación: siguen pendientes identidad real de Partner Center, firma, WACK, instalación limpia y prueba bajo virtualización del paquete. Se conserva la licencia MIT existente del repositorio remoto.
-
-.NET 8 terminó su soporte el 10 de noviembre de 2026. Se mantiene por requisito explícito y ese límite debe revisarse al distribuir. No se afirma una auditoría de seguridad del sistema operativo o del runtime.
-
-## Historial y reversión
-
-La publicación debe partir del historial remoto, conservar LICENSE y los archivos ajenos a esta actualización, y pasar por una rama y pull request. No se debe forzar la rama principal.
-
-Para revertir después de integrar, usa git revert sobre los commits de la actualización, sin reset --hard ni clean indiscriminado. Cambiar de rama o revertir fuentes no elimina preferencias ni enlaces creados por el usuario.
+The repository retains its existing MIT license. Revert source changes with `git revert`; changing branches does not remove preferences or links created by users.

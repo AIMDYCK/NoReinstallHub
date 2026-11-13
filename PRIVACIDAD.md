@@ -1,13 +1,11 @@
-# Privacidad — NoReinstallHub 1.1
+# Privacy — NoReinstallHub 1.1
 
-NoReinstallHub funciona localmente. No usa cuentas, anuncios, analítica, telemetría ni conexiones de red. No transmite archivos, rutas o preferencias a terceros.
+NoReinstallHub runs locally. It does not use accounts, ads, analytics, telemetry, or network connections. It does not send files, paths, or preferences to third parties.
 
-Las rutas que escribes se usan para validar y crear la junction que solicitas. No se escanea el contenido de tus discos ni se mueven archivos. Las rutas y la actividad solo permanecen en memoria durante la sesión.
+Paths you enter are used to validate and create the junction you request. The app does not scan disk contents or move files. Paths and activity remain in memory only for the current session.
 
-Se guardan tema, idioma y estado de la bienvenida en preferences.json dentro de LocalAppData/NoReinstallHub. Las preferencias de una aplicación MSIX pueden estar redirigidas al almacenamiento local de su paquete. Un archivo ilegible se conserva intacto. No se modifica configuración global de Windows.
+Theme, language, and welcome-screen state are saved in `preferences.json` under `LocalAppData/NoReinstallHub`. A packaged app may redirect preferences to package-local storage. An unreadable file is preserved. No global Windows settings are changed.
 
-La acción Copiar ruta coloca la ruta solicitada en el portapapeles de Windows. La acción Abrir destino pide al shell de Windows que abra esa carpeta. Ambas requieren pulsar sus botones; no se ejecutan al iniciar.
+The Copy path action puts the requested path on the Windows clipboard. Open destination asks the Windows shell to open that folder. Neither happens until you select its button.
 
-Los informes y capturas de tests solo se generan al ejecutar las herramientas de desarrollo, bajo artifacts/, y no se suben a ningún servicio por esos scripts.
-
-Antes de enviar a la Store, el editor debe revisar este documento, añadir su contacto y publicar una URL de privacidad accesible según los requisitos de Partner Center. Esta entrega no publica esa URL ni inventa información del editor.
+Test reports and screenshots are generated only when development tools are run, under artifacts/. Those scripts do not upload them to any service.

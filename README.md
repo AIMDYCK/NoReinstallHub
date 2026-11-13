@@ -1,94 +1,88 @@
 # NoReinstallHub 1.1.2
 
-Conecta dos ubicaciones sin mover tus archivos: NoReinstallHub crea una **junction NTFS** en una ruta nueva que apunta a la carpeta que ya contiene tus datos.
+Connect two folder locations without moving your files. NoReinstallHub creates an **NTFS junction** at a new path that points to the folder that already contains your data.
 
-Aplicación nativa de escritorio en **C# · Windows Forms · Microsoft .NET 8**. Sin cuentas, servicios, anuncios ni telemetría. No mueve, copia ni elimina datos.
+A native desktop app built with **C#, Windows Forms, and Microsoft .NET 8**. No accounts, ads, services, or telemetry. It does not move, copy, or delete your data.
 
-## La nueva interfaz
+## The interface
 
-Dos tarjetas numeradas distinguen **Archivos reales** y **Nueva ubicación del enlace**. Una única acción principal crea el enlace; **Comprobar** revisa las rutas sin cambiar nada. El resultado se muestra en la ventana, con botones para abrir el destino y copiar su ruta. La actividad se puede desplegar.
+The two numbered cards distinguish **Real files** from **New link location**. The primary action creates the link; **Check** validates the paths without changing anything. Results appear in the window, with actions to open the destination or copy its path. Session activity can be expanded when needed.
 
-Tema claro, oscuro o del sistema; contraste alto del sistema; español, inglés, portugués y francés. La primera apertura conserva una configuración inicial para elegir idioma y aspecto. Solo esas preferencias se guardan: las rutas y la actividad permanecen en memoria.
+Choose light, dark, or system theme, and English, Spanish, Portuguese, or French. On first launch, choose your language and appearance. Only these preferences are saved; paths and activity stay in memory.
 
-Capturas de la versión 1.1.2, con rutas de ejemplo. Muestran el área de la aplicación; no se crearon enlaces para generarlas.
+The 1.1.2 screenshots below use example paths. They show the app client area and do not create any links.
 
-### Tema claro
+### Light theme
 
-![NoReinstallHub 1.1.2 — tema claro](docs/interfaz-clara.png)
+![NoReinstallHub 1.1.2 — light theme](docs/interfaz-clara.png)
 
-### Tema oscuro
+### Dark theme
 
-![NoReinstallHub 1.1.2 — tema oscuro](docs/interfaz-oscura.png)
+![NoReinstallHub 1.1.2 — dark theme](docs/interfaz-oscura.png)
 
-## Descargar
+## Download
 
-Las distribuciones publicadas están en [GitHub Releases](https://github.com/AIMDYCK/NoReinstallHub/releases). Para la versión framework-dependent, extrae el ZIP completo y conserva sus archivos juntos; se requiere .NET Desktop Runtime 8.
+Get published builds from [GitHub Releases](https://github.com/AIMDYCK/NoReinstallHub/releases). For the framework-dependent build, extract the complete ZIP and keep its files together. The .NET Desktop Runtime 8 is required.
 
-## Requisitos e instalación local
+## Requirements and local build
 
-Windows 10/11, una unidad local NTFS para el enlace y **.NET Desktop Runtime 8** para la distribución framework-dependent. Para compilar se requieren el SDK .NET y los reference packs de .NET 8. Se verificó con SDK 10.0.404, manteniendo `net8.0-windows`.
+Windows 10/11, a local NTFS volume for the link, and **.NET Desktop Runtime 8** for the framework-dependent build. Building requires the .NET SDK and .NET 8 reference packs. The project remains on `net8.0-windows`; it was verified using SDK 10.0.404.
 
-No hay paquetes NuGet externos. NoReinstallHub funciona con los permisos del usuario, sin exigir administrador ni abrir consolas. Elige ubicaciones donde tengas permiso de escritura; las carpetas protegidas pueden rechazarse.
+There are no external NuGet packages. NoReinstallHub runs with the current user's permissions; it does not require administrator rights or open a command window. Choose locations where you have write access. Protected folders may be rejected by Windows.
 
-Después de verificar, genera una carpeta portable local:
+To create a local portable folder after verification:
 
 ```powershell
 dotnet publish NoReinstallHub.csproj -c Release --no-restore --self-contained false -o artifacts/portable
 ```
 
-Abre `artifacts\portable\NoReinstallHub.exe` y conserva toda esa carpeta. Esta modalidad requiere el runtime instalado; no se anuncia como ejecutable único.
+Run `artifacts\portable\NoReinstallHub.exe` and keep the whole folder together. This distribution requires the runtime to be installed; it is not a single-file executable.
 
-## Uso
+## How to use
 
-1. En la primera apertura, selecciona tema e idioma y pulsa **Empezar**.
-2. En **Archivos reales**, selecciona la carpeta que contiene tus datos.
-3. En **Nueva ubicación del enlace**, escribe una ruta nueva. **Carpeta padre** propone un nombre editable.
-4. Usa **Comprobar** si quieres revisar sin cambios y luego **Crear enlace**.
-5. Tras el éxito puedes abrir el destino, copiar su ruta o preparar un nuevo enlace.
+1. On first launch, choose a theme and language, then select **Get started**.
+2. Under **Real files**, choose the folder that already contains your data.
+3. Under **New link location**, enter a new path. **Parent folder** suggests an editable name.
+4. Select **Check** to validate without changes, then **Create link**.
+5. After success, open the destination, copy its path, or prepare another link.
 
-Ejemplo: origen `D:\Juegos\MiJuego` y enlace `C:\Juegos\MiJuego`. Ambas rutas abren los mismos datos. El programa no traslada previamente una instalación: si necesitas mover datos, prepara y verifica la copia por separado.
+Example: source `D:\Games\MyGame`, link `C:\Games\MyGame`. Both paths open the same data. The app does not move an existing installation first; if you need to move data, prepare and verify that copy separately.
 
-El destino debe ser inexistente, incluso si está vacío. No se reemplaza ni elimina nada. Se rechazan rutas iguales o anidadas, raíces, rutas de red, nombres reservados y enlaces intermedios para evitar ciclos y alias. Los caracteres válidos como `&`, `%`, `!` y `^` se admiten literalmente: ya no se usa un intérprete de comandos.
+The destination must not exist, even if it is empty. Nothing is replaced or deleted. To prevent cycles and aliases, the app rejects identical or nested paths, drive roots, network paths, reserved names, and paths that pass through another link. Valid characters such as `&`, `%`, `!`, and `^` are handled literally; no command interpreter is used.
 
-Cierra las aplicaciones que usen esas carpetas y conserva una copia de seguridad. Editar a través del enlace modifica los archivos reales. Evita carpetas del sistema e instalaciones en ejecución.
+Close apps that use these folders and keep a backup. Editing through the link changes the real files. Avoid system folders and folders used by running applications.
 
-Atajos: **Alt+1** origen, **Alt+2** destino, **Ctrl+Enter** crear, **F1** ayuda. Tab recorre los controles; el foco de los botones permanece visible. La ventana usa contenido desplazable y acciones fijas para pantallas pequeñas.
+Shortcuts: **Alt+1** source, **Alt+2** destination, **Ctrl+Enter** create, **F1** help. Tab moves between controls and keyboard focus stays visible. The content scrolls while actions remain available on small screens.
 
-## Compilación y pruebas
+## Build and tests
 
-Para obtener el código:
+Clone the repository:
 
 ```powershell
 git clone https://github.com/AIMDYCK/NoReinstallHub.git
 Set-Location NoReinstallHub
 ```
 
+Run the complete verification:
+
 ```powershell
 pwsh -NoProfile -File scripts/Verificar.ps1
 ```
 
-Limpia outputs conocidos de Debug/Release, restaura con la configuración local sin fuentes externas, compila ambas configuraciones tratando warnings como errores, ejecuta pruebas nativas y visuales, y consulta paquetes obsoletos y vulnerables.
+It cleans known Debug/Release outputs, restores using the local NuGet configuration, builds both configurations with warnings as errors, runs the native test runner, and queries outdated and vulnerable packages.
 
-El runner es un ejecutable propio sin dependencias de pruebas; **dotnet test no lo ejecuta**. Las pruebas muestran ventanas de forma breve y guardan imágenes bajo artifacts/. Cubren seguridad de rutas, conservación de datos, creación simultánea, preferencias, traducciones, contraste y una matriz simulada de escala 100/125/150/200 %. La simulación no sustituye probar monitores con DPI real ni lectores de pantalla.
+The test runner is a standalone executable; **dotnet test does not run it**. Tests briefly show windows and save images under artifacts/. They cover path safety, data preservation, concurrent creation, preferences, translations, contrast, and a simulated 100/125/150/200% scaling matrix. Simulation does not replace testing on real DPI monitors or with screen readers.
 
-Para regenerar las capturas del README, tras compilar las pruebas: `dotnet run --project tests/NoReinstallHub.Tests/NoReinstallHub.Tests.csproj -c Release --no-build --no-restore -- --capture-docs`. Usa únicamente rutas de ejemplo; conserva también docs/screenshot.png como ruta compatible para enlaces antiguos.
+To regenerate the README screenshots after building the tests, run: `dotnet run --project tests/NoReinstallHub.Tests/NoReinstallHub.Tests.csproj -c Release --no-build --no-restore -- --capture-docs`. It uses example paths and also keeps `docs/screenshot.png` for older links. For a quicker check without the visual matrix, run `pwsh -NoProfile -File scripts/Verificar.ps1 -SkipVisual`.
 
-Para una comprobación rápida sin la matriz visual: `pwsh -NoProfile -File scripts/Verificar.ps1 -SkipVisual`.
+## Errors and recovery
 
-## Errores y recuperación
+Errors are shown in the selected language. Check permissions, volume availability, and that the destination is still free. The app never requests elevation automatically.
 
-Los errores se explican en el idioma elegido. Comprueba permisos, disponibilidad de las unidades y que el destino siga libre. Nunca se intenta elevar permisos automáticamente.
+If Windows rejects conversion of the newly created directory into a junction, an empty folder created by the app may remain. It is not deleted automatically; check the destination before trying again. Native operations cannot be cancelled midway through a write, so wait for them to finish before closing the app.
 
-Si Windows rechaza convertir el directorio nuevo en junction, puede quedar una carpeta vacía recién creada por la aplicación. No se borra automáticamente: revisa el destino antes de repetir. Las operaciones nativas no se cancelan a mitad de una escritura; espera a que terminen antes de cerrar.
+Preferences are stored at `%LOCALAPPDATA%\NoReinstallHub\preferences.json`. If the file is unreadable or malformed, it is preserved and safe defaults are used for that session.
 
-Las preferencias se guardan en `%LOCALAPPDATA%\NoReinstallHub\preferences.json`. Si el archivo está dañado o no se puede leer, se conserva intacto y se usan valores seguros durante esa sesión.
+## Privacy and license
 
-## Preparación Microsoft Store
-
-Aplicación 1.1.2 y versión de paquete 1.1.2.0 centralizadas en Version.props. Se incluye una plantilla MSIX x64 y un script de empaquetado **local sin firma**. No contienen identidad Store inventada, certificados ni credenciales.
-
-Consulta [preparación de la Store](packaging/README.md), [privacidad](PRIVACIDAD.md), [changelog](CHANGELOG.md), [plan](PLAN_ACTUALIZACION.md) e [informe](INFORME_ACTUALIZACION.md). No se afirma aprobación ni certificación de Microsoft Store; la publicación en GitHub es independiente.
-
-Se conserva .NET 8 por requisito del proyecto; su soporte terminó el 10 de noviembre de 2026. Ese límite debe revisarse al distribuir, sin migrar automáticamente a otra plataforma. [Política de Microsoft](https://dotnet.microsoft.com/en-us/platform/support/policy).
-
-Repositorio de referencia: [AIMDYCK/NoReinstallHub](https://github.com/AIMDYCK/NoReinstallHub). Licencia **MIT**. Consulta [LICENSE](LICENSE), conservado del repositorio.
+See [Privacy](PRIVACIDAD.md) for details. NoReinstallHub is licensed under **MIT**; see [LICENSE](LICENSE).
