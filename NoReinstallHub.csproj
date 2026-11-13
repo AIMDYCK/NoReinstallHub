@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="Version.props" />
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -12,12 +13,16 @@
     <AssemblyName>NoReinstallHub</AssemblyName>
     <ProjectName>NoReinstallHub</ProjectName>
     <!-- Assembly metadata (shown in .exe Properties > Details) -->
-    <Version>1.0.0</Version>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationDefaultFont>Segoe UI, 10pt</ApplicationDefaultFont>
     <Company>Aimdick</Company>
     <Product>NoReinstallHub</Product>
-    <Description>Tricking Windows for better storage management</Description>
+    <Description>Local NTFS folder links without moving your files</Description>
     <AssemblyTitle>NoReinstallHub</AssemblyTitle>
-    <AssemblyDescription>Tricking Windows for better storage management</AssemblyDescription>
+    <AssemblyDescription>Local NTFS folder links without moving your files</AssemblyDescription>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="tests\**\*.cs" />
+  </ItemGroup>
 </Project>
