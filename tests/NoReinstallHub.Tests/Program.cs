@@ -9,7 +9,33 @@ internal static class Program
     {
         try
         {
+            if (args.Contains("--capture-docs"))
+            {
+                ApplicationConfiguration.Initialize();
+                UiChecks.CaptureDocs();
+                return 0;
+            }
+            if (args.Contains("--caption-only"))
+            {
+                ApplicationConfiguration.Initialize();
+                UiChecks.CheckCaptions(Check);
+                Console.WriteLine($"OK: {passed} comprobaciones de barra nativa.");
+                return 0;
+            }
             RunAsync().GetAwaiter().GetResult();
+            ApplicationConfiguration.Initialize();
+            using var form = new MainForm(new SettingsStore(Path.Combine(Environment.CurrentDirectory, "artifacts", "ui-prefs.json")), true);
+            form.Show();
+            Application.DoEvents();
+            Check(form.Text == "NoReinstallHub", "Nombre del programa");
+            Check(!((TextBox)Find(form, "txtDestino")!).ReadOnly, "Destino editable");
+            Check(form.AcceptButton == Find(form, "btnCrearJunction"), "Acción por teclado");
+            using var bitmap = new Bitmap(form.Width, form.Height);
+            form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size));
+            Directory.CreateDirectory("artifacts");
+            bitmap.Save("artifacts/NoReinstallHub-preview.png");
+            form.Close();
+            if (!args.Contains("--skip-visual")) UiChecks.Run(Check);
             Console.WriteLine($"OK: {passed} comprobaciones.");
             return 0;
         }

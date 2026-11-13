@@ -1,225 +1,318 @@
+using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Security.Principal;
+using Microsoft.Win32;
 
 namespace NoReinstallHub;
 
 public partial class MainForm : Form
 {
-    public MainForm()
+    private readonly SettingsStore settings;
+    private AppPreferences preferences;
+    private Texts texts;
+    private UiTheme palette = UiTheme.Resolve("system");
+    private bool updating;
+    private bool operationInProgress;
+    private bool statusIsError;
+    private string statusKey = "Ready";
+    private JunctionPaths? lastCreated;
+    private Icon? applicationIcon;
+
+    public MainForm() : this(new SettingsStore(), false) { }
+
+    internal MainForm(SettingsStore store, bool skipWelcome, AppPreferences? preview = null)
     {
+        settings = store;
+        preferences = (preview ?? settings.Load()).Sanitize();
+        if (skipWelcome) preferences = preferences with { FirstRunCompleted = true };
+        texts = new Texts(preferences.Language);
+        updating = true;
         InitializeComponent();
-        SetFormIcon();
-        CheckAdminPrivileges();
-        Log("Application started.");
-    }
-
-    private static bool IsRunningAsAdministrator()
-    {
+        themeChoice.Items.AddRange([texts["System"], texts["Light"], texts["Dark"]]);
+        themeChoice.SelectedIndex = Array.IndexOf(new[] { "system", "light", "dark" }, preferences.Theme);
+        languageChoice.SelectedIndex = Array.IndexOf(Texts.Languages, preferences.Language);
+        updating = false;
+        ApplyPresentation();
+        welcome.Visible = !preferences.FirstRunCompleted;
+        preferenceWarning.Visible = settings.LoadFailed;
         try
         {
-            var identity = WindowsIdentity.GetCurrent();
-            var principal = new WindowsPrincipal(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+            applicationIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            Icon = applicationIcon;
         }
-        catch
+        catch (Exception ex) when (ex is ArgumentException or IOException or Win32Exception) { /* Default window icon remains usable. */ }
+        FormClosing += (_, e) =>
         {
-            return false;
+            if (operationInProgress) { e.Cancel = true; SetStatus("CloseBusy"); }
+        };
+        SystemEvents.UserPreferenceChanged += OnSystemPreferencesChanged;
+        UpdateActions();
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        WindowChrome.Apply(this, palette);
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        // Small screens at 200% stay usable through the scrollable content region.
+        var available = Screen.FromControl(this).WorkingArea;
+        MinimumSize = new Size(Math.Min(MinimumSize.Width, available.Width), Math.Min(MinimumSize.Height, available.Height));
+        Size = new Size(Math.Min(Width, available.Width), Math.Min(Height, available.Height));
+        WrapLabels(this);
+    }
+
+    private void OnSystemPreferencesChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        if (!IsDisposed && IsHandleCreated)
+        {
+            try { BeginInvoke(ApplyPresentation); }
+            catch (InvalidOperationException) { /* Window closed during the system event. */ }
         }
     }
 
-    private void CheckAdminPrivileges()
+    private void ApplyPresentation()
     {
-        if (!IsRunningAsAdministrator())
-        {
-            panelAdminWarning.Visible = true;
-            Log("WARNING: Not running as Administrator. Junction creation may fail.");
-        }
+        texts = new Texts(preferences.Language);
+        palette = UiTheme.Resolve(preferences.Theme);
+        updating = true;
+        var selectedTheme = themeChoice.SelectedIndex;
+        themeChoice.Items.Clear();
+        themeChoice.Items.AddRange([texts["System"], texts["Light"], texts["Dark"]]);
+        themeChoice.SelectedIndex = Math.Max(0, selectedTheme);
+        themeChoice.AccessibleName = texts["Theme"] + ": " + themeChoice.Text;
+        languageChoice.AccessibleName = texts["Language"] + ": " + languageChoice.Text;
+        ApplyControls(this, false);
+        txtOrigen.PlaceholderText = texts["SourcePlaceholder"];
+        txtDestino.PlaceholderText = texts["DestinationPlaceholder"];
+        txtOrigen.AccessibleName = texts["SourceTitle"];
+        txtDestino.AccessibleName = texts["DestinationTitle"];
+        txtLog.AccessibleName = texts["Log"];
+        progress.AccessibleName = texts["Busy"];
+        btnActivity.Text = texts[txtLog.Visible ? "HideActivity" : "Activity"];
+        progress.MarqueeAnimationSpeed = SystemInformation.IsMenuAnimationEnabled ? 25 : 0;
+        status.Text = texts[statusKey];
+        status.ForeColor = statusIsError && !SystemInformation.HighContrast
+            ? (palette.Background.GetBrightness() < .3 ? Color.FromArgb(255, 180, 171) : Color.FromArgb(180, 35, 24)) : palette.Text;
+        updating = false;
+        WindowChrome.Apply(this, palette);
+        WrapLabels(this);
+        Invalidate(true);
     }
 
-    private void BtnRestartAdmin_Click(object? sender, EventArgs e)
+    private void ApplyControls(Control parent, bool surface)
     {
-        try
+        parent.BackColor = surface ? palette.Surface : palette.Background;
+        parent.ForeColor = palette.Text;
+        foreach (Control control in parent.Controls)
         {
-            var startInfo = new ProcessStartInfo
+            var isSurface = surface || Equals(control.Tag, "surface") || control == welcome;
+            ApplyControls(control, isSurface);
+            if (control.Tag is string key && Texts.All.ContainsKey(key))
             {
-                FileName = Application.ExecutablePath,
-                UseShellExecute = true,
-                Verb = "runas"
-            };
-            Process.Start(startInfo);
-            Application.Exit();
+                control.Text = texts[key];
+                control.AccessibleName = control.Text.Replace("&", "");
+            }
+            if (control is Label && (Equals(control.Tag, "Subtitle") || Equals(control.Tag, "Tag") ||
+                Equals(control.Tag, "SourceHint") || Equals(control.Tag, "DestinationHint") || Equals(control.Tag, "Safe")))
+                control.ForeColor = palette.Muted;
+            if (Equals(control.Tag, "accent")) control.ForeColor = palette.Accent;
+            if (control is TextBox or ComboBox) control.BackColor = palette.Surface;
+            if (control is RoundedInput input)
+            {
+                input.Palette = palette;
+                input.Editor.BackColor = palette.Background;
+                input.Invalidate();
+            }
+            if (control is ModernButton button) { button.Palette = palette; button.Invalidate(); }
         }
-        catch (Exception ex)
-        {
-            Log($"Failed to restart as Admin: {ex.Message}");
-            MessageBox.Show("Could not restart as Administrator. Please run the program as Admin manually.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
+    }
+
+    private void PreferencesChanged()
+    {
+        if (updating || themeChoice.SelectedIndex < 0 || languageChoice.SelectedIndex < 0) return;
+        preferences = preferences with { Theme = new[] { "system", "light", "dark" }[themeChoice.SelectedIndex],
+            Language = Texts.Languages[languageChoice.SelectedIndex] };
+        ApplyPresentation();
+        preferenceWarning.Visible = !settings.TrySave(preferences);
+    }
+
+    private void CompleteWelcome()
+    {
+        preferences = preferences with { FirstRunCompleted = true };
+        welcome.Visible = false;
+        preferenceWarning.Visible = !settings.TrySave(preferences);
+        UpdateActions();
+        txtOrigen.Focus();
+    }
+
+    private void PathsChanged()
+    {
+        if (updating || operationInProgress) return;
+        lastCreated = null;
+        resultActions.Visible = false;
+        SetStatus("Ready");
+        UpdateActions();
+    }
+
+    private void UpdateActions()
+    {
+        var ready = !string.IsNullOrWhiteSpace(txtOrigen.Text) && !string.IsNullOrWhiteSpace(txtDestino.Text) && preferences.FirstRunCompleted;
+        btnCrearJunction.Enabled = btnValidate.Enabled = ready && !operationInProgress;
+        btnOrigen.Enabled = btnDestino.Enabled = btnClear.Enabled = !operationInProgress;
+        txtOrigen.ReadOnly = txtDestino.ReadOnly = operationInProgress;
+        themeChoice.Enabled = languageChoice.Enabled = !operationInProgress;
+        btnCrearJunction.Text = texts[operationInProgress ? "Busy" : "Create"];
+        progress.Visible = operationInProgress;
+        resultActions.Enabled = !operationInProgress;
     }
 
     private void Log(string message)
     {
-        var timestamp = DateTime.Now.ToString("HH:mm");
-        var line = $"[{timestamp}] {message}\r\n";
-        txtLog.AppendText(line);
-        txtLog.SelectionStart = txtLog.Text.Length;
-        txtLog.ScrollToCaret();
+        if (txtLog.TextLength > 32000) txtLog.Text = txtLog.Text[^16000..];
+        txtLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
     }
 
-    private void SetFormIcon()
+    private void SetStatus(string key, bool error = false)
     {
+        statusKey = key;
+        statusIsError = error;
+        status.Text = texts[key];
+        status.AccessibleName = status.Text;
+        status.ForeColor = error && !SystemInformation.HighContrast
+            ? (palette.Background.GetBrightness() < .3 ? Color.FromArgb(255, 180, 171) : Color.FromArgb(180, 35, 24))
+            : palette.Text;
+        WrapLabels(body);
+    }
+
+    private void Report(Exception exception)
+    {
+        var message = texts.Error(exception);
+        status.Text = message;
+        status.AccessibleName = message;
+        statusKey = exception is JunctionException junction ? junction.Code :
+            exception is UnauthorizedAccessException ? "Permission" : exception is PathTooLongException ? "PathTooLong" : "Unexpected";
+        SetStatus(statusKey, true);
+        Log(message);
+    }
+
+    private async void CheckPaths()
+    {
+        if (operationInProgress) return;
+        var source = txtOrigen.Text;
+        var destination = txtDestino.Text;
+        operationInProgress = true;
+        UpdateActions();
+        SetStatus("Checking");
         try
         {
-            var icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
-            if (icon != null)
-                Icon = icon;
+            await Task.Run(() => JunctionService.Validate(source, destination));
+            SetStatus("Valid");
+            Log(texts["Valid"]);
         }
-        catch { /* ignore if icon cannot be loaded */ }
+        catch (Exception ex) { Report(ex); }
+        finally { operationInProgress = false; UpdateActions(); }
+    }
+
+    private async void BtnCrearJunction_Click(object? sender, EventArgs e)
+    {
+        if (operationInProgress || !btnCrearJunction.Enabled) return;
+        var source = txtOrigen.Text;
+        var destination = txtDestino.Text;
+        operationInProgress = true;
+        lastCreated = null;
+        resultActions.Visible = false;
+        SetStatus("Busy");
+        UpdateActions();
+        try
+        {
+            lastCreated = await JunctionService.CreateAsync(source, destination);
+            SetStatus("Success");
+            Log(texts["Success"]);
+            resultActions.Visible = true;
+        }
+        catch (Exception ex) { Report(ex); }
+        finally { operationInProgress = false; UpdateActions(); }
     }
 
     private void BtnOrigen_Click(object? sender, EventArgs e)
     {
-        using var dlg = new FolderBrowserDialog
-        {
-            Description = "Select the folder where the actual files are (source)",
-            UseDescriptionForTitle = true
-        };
-        if (dlg.ShowDialog() == DialogResult.OK)
-        {
-            txtOrigen.Text = dlg.SelectedPath;
-            Log("Source folder selected.");
-        }
+        using var dialog = new FolderBrowserDialog { Description = texts["SourceHint"],
+            UseDescriptionForTitle = true, ShowNewFolderButton = false };
+        if (dialog.ShowDialog(this) == DialogResult.OK) txtOrigen.Text = dialog.SelectedPath;
     }
 
     private void BtnDestino_Click(object? sender, EventArgs e)
     {
-        using var dlg = new FolderBrowserDialog
-        {
-            Description = "Select the folder path that will be the junction (destination link)",
-            UseDescriptionForTitle = true
-        };
-        if (dlg.ShowDialog() == DialogResult.OK)
-        {
-            txtDestino.Text = dlg.SelectedPath;
-            Log("Destination folder selected.");
-        }
+        using var dialog = new FolderBrowserDialog { Description = texts["DestinationHint"],
+            UseDescriptionForTitle = true, ShowNewFolderButton = false };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+        var name = texts["NewLinkName"];
+        txtDestino.Text = Path.Combine(dialog.SelectedPath, name);
+        txtDestino.Focus();
+        txtDestino.Select(txtDestino.TextLength - name.Length, name.Length);
     }
 
-    private void BtnHowToUse_Click(object? sender, EventArgs e)
+    private void ResetPaths()
     {
-        using var instructions = new InstructionsForm();
-        instructions.ShowDialog(this);
+        txtOrigen.Clear();
+        txtDestino.Clear();
+        txtOrigen.Focus();
     }
 
-    private void BtnCrearJunction_Click(object? sender, EventArgs e)
+    private void ToggleActivity()
     {
-        var origen = txtOrigen.Text.Trim();
-        var destino = txtDestino.Text.Trim();
+        txtLog.Visible = !txtLog.Visible;
+        btnActivity.Text = texts[txtLog.Visible ? "HideActivity" : "Activity"];
+    }
 
-        if (string.IsNullOrEmpty(origen))
-        {
-            MessageBox.Show("Please select the source folder.", "Source Folder", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
+    private void CopyDestination()
+    {
+        if (lastCreated == null) return;
+        try { Clipboard.SetText(lastCreated.Destination); SetStatus("Copied"); }
+        catch (System.Runtime.InteropServices.ExternalException) { SetStatus("ClipboardError", true); }
+    }
 
-        if (string.IsNullOrEmpty(destino))
-        {
-            MessageBox.Show("Please select the destination folder (link path).", "Destination Folder", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
-
-        Log("Source validated.");
-        if (!Directory.Exists(origen))
-        {
-            Log("Error: Source folder does not exist.");
-            MessageBox.Show("The source folder does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return;
-        }
-
-        // Seguridad: destino NO debe existir o debe estar vacía (mklink exige que el enlace no exista)
-        if (Directory.Exists(destino))
-        {
-            try
-            {
-                var entries = Directory.EnumerateFileSystemEntries(destino);
-                if (entries.Any())
-                {
-                    Log("Error: Destination folder exists and is not empty.");
-                    MessageBox.Show(
-                        "The destination folder already exists and is not empty. It must be empty or not exist to create the junction.",
-                        "Invalid Destination",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning);
-                    return;
-                }
-                Directory.Delete(destino);
-            }
-            catch (Exception ex)
-            {
-                Log($"Error: Could not check or clear destination: {ex.Message}");
-                MessageBox.Show($"Could not check or clear the destination folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-        }
-
-        Log("Destination validated.");
-        // Create parent directory of destination if it doesn't exist (mklink doesn't create it)
-        var parentDest = Path.GetDirectoryName(destino);
-        if (!string.IsNullOrEmpty(parentDest) && !Directory.Exists(parentDest))
-        {
-            try
-            {
-                Directory.CreateDirectory(parentDest);
-            }
-            catch (Exception ex)
-            {
-                Log($"Error: Could not create parent folder: {ex.Message}");
-                MessageBox.Show($"Could not create the destination parent folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-        }
-
-        Log("Creating junction...");
+    private void OpenDestination()
+    {
+        if (lastCreated == null) return;
         try
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = $"/c mklink /J \"{destino}\" \"{origen}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            using var process = Process.Start(startInfo);
-            if (process == null)
-            {
-                Log("Error: Could not start mklink process.");
-                MessageBox.Show("Could not start the process to create the junction.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            var salida = process.StandardOutput.ReadToEnd();
-            var errores = process.StandardError.ReadToEnd();
-            process.WaitForExit(5000);
-
-            if (process.ExitCode == 0)
-            {
-                Log("Success.");
-                MessageBox.Show($"Junction created successfully.\n\nLink: {destino}\nPoints to: {origen}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                var mensaje = string.IsNullOrWhiteSpace(errores) ? salida : errores;
-                Log($"Error: Junction creation failed (code {process.ExitCode}).");
-                MessageBox.Show($"Error creating the junction (code {process.ExitCode}):\n{mensaje}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            if (!Directory.Exists(lastCreated.Destination)) { SetStatus("OpenError", true); return; }
+            using var process = Process.Start(new ProcessStartInfo { FileName = lastCreated.Destination, UseShellExecute = true });
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is Win32Exception or IOException or InvalidOperationException)
+        { SetStatus("OpenError", true); }
+    }
+
+    private void ShowHelp()
+    {
+        using var help = new InstructionsForm(texts, palette);
+        help.ShowDialog(this);
+    }
+
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (keyData == Keys.F1) { ShowHelp(); return true; }
+        if (!operationInProgress)
         {
-            Log($"Error: {ex.Message}");
-            MessageBox.Show($"Error running mklink: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (keyData == (Keys.Alt | Keys.D1)) { txtOrigen.Focus(); return true; }
+            if (keyData == (Keys.Alt | Keys.D2)) { txtDestino.Focus(); return true; }
+            if (keyData == (Keys.Control | Keys.Enter)) { btnCrearJunction.PerformClick(); return true; }
         }
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            SystemEvents.UserPreferenceChanged -= OnSystemPreferencesChanged;
+            applicationIcon?.Dispose();
+        }
+        base.Dispose(disposing);
+        if (disposing) foreach (var font in ownedFonts) font.Dispose();
     }
 }
