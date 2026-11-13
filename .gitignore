@@ -139,3 +139,10 @@ appsettings.*.Local.json
 #   Program.cs, MainForm.cs, MainForm.Designer.cs, InstructionsForm.cs
 #   NoReinstallHub.csproj, app.manifest, app_icon.ico
 #   README.md and docs/screenshot.png (referenced by README.md)
+
+# Local Store packages (never source artifacts)
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+packaging/output/
